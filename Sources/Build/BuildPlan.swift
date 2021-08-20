@@ -9,14 +9,15 @@
 */
 
 import Basics
-import TSCBasic
-import TSCUtility
-import PackageModel
+import Foundation
+import OrderedCollections
 import PackageGraph
 import PackageLoading
-import Foundation
+import PackageModel
 import SPMBuildCore
 @_implementationOnly import SwiftDriver
+import TSCBasic
+import TSCUtility
 
 extension String {
     fileprivate var asSwiftStringLiteralConstant: String {
@@ -2045,7 +2046,7 @@ public class BuildPlan {
         }
 
         // Build cache
-        var cflagsCache: OrderedSet<String> = []
+        var cflagsCache: OrderedCollections.OrderedSet<String> = []
         var libsCache: [String] = []
         for tuple in ret {
             for cFlag in tuple.cFlags {

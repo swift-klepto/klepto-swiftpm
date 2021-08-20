@@ -10,6 +10,7 @@
 
 import Basics
 import Dispatch
+import OrderedCollections
 import PackageModel
 import TSCBasic
 import TSCUtility
@@ -444,7 +445,7 @@ public struct PubgrubDependencyResolver {
     /// If a conflict is found, the conflicting incompatibility is returned to
     /// resolve the conflict on.
     internal func propagate(state: State, node: DependencyResolutionNode) throws {
-        var changed: OrderedSet<DependencyResolutionNode> = [node]
+        var changed: OrderedCollections.OrderedSet<DependencyResolutionNode> = [node]
 
         while !changed.isEmpty {
             let package = changed.removeFirst()
@@ -1221,7 +1222,7 @@ internal final class PubGrubPackageContainer {
                     throw InternalError("Unexpected unversioned requirement: \(constraint)")
                 }
                 return try constraint.nodes().map { dependencyNode in
-                    var terms: OrderedSet<Term> = []
+                    var terms: OrderedCollections.OrderedSet<Term> = []
                     terms.append(Term(node, .exact(version)))
                     terms.append(Term(not: dependencyNode, vs))
                     return try Incompatibility(terms, root: root, cause: .dependency(node: node))
@@ -1235,7 +1236,7 @@ internal final class PubGrubPackageContainer {
 
         return try constraints.flatMap { constraint in
             return try constraint.nodes().map { constraintNode in
-                var terms: OrderedSet<Term> = []
+                var terms: OrderedCollections.OrderedSet<Term> = []
                 let lowerBound = lowerBounds[constraintNode] ?? "0.0.0"
                 let upperBound = upperBounds[constraintNode] ?? Version(version.major + 1, 0, 0)
                 assert(lowerBound < upperBound)
