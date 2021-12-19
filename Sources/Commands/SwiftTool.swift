@@ -27,6 +27,8 @@ import XCBuildSupport
 import Workspace
 import Basics
 
+import Klepto
+
 typealias Diagnostic = TSCBasic.Diagnostic
 
 private class ToolWorkspaceDelegate: WorkspaceDelegate {
@@ -721,7 +723,23 @@ public class SwiftTool {
         do {
             hostDestination = try self._hostToolchain.get().destination
             // Create custom toolchain if present.
-            if let customDestination = self.options.customCompileDestination {
+            if options.klepto {
+                if let kleptoDest = Destination.forKlepto(
+                    diagnostics: self.diagnostics,
+                    dkp: self.options.devkitproPath!,
+                    toolchain: self.options.kleptoToolchainPath!,
+                    kleptoSpecsPath: self.options.kleptoSpecsPath!,
+                    kleptoIsystem: self.options.kleptoIsystem,
+                    kleptoIcuPaths: self.options.kleptoIcuPaths,
+                    kleptoLlvmBinPath: self.options.kleptoLlvmBinPath!
+                ) {
+                    destination = kleptoDest
+                }
+                else {
+                    return .failure(InternalError("could not create klepto destination"))
+                }
+            }
+            else if let customDestination = self.options.customCompileDestination {
                 destination = try Destination(fromFile: customDestination)
             } else {
                 // Otherwise use the host toolchain.
@@ -789,7 +807,8 @@ public class SwiftTool {
                 manifestResources: self._hostToolchain.get().manifestResources,
                 isManifestSandboxEnabled: !self.options.shouldDisableSandbox,
                 cacheDir: cachePath,
-                extraManifestFlags: self.options.manifestFlags
+                extraManifestFlags: options.manifestFlags,
+                klepto: options.klepto
             )
         })
     }()

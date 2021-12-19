@@ -1155,7 +1155,7 @@ public final class PackageBuilder {
             switch product.type {
             case .library, .test:
                 break
-            case .executable:
+            case .executable, .nxApplication:
                 guard self.validateExecutableProduct(product, with: targets) else {
                     continue
                 }
@@ -1174,7 +1174,7 @@ public final class PackageBuilder {
                 switch product.type {
                 case .library, .test:
                     return []
-                case .executable:
+                case .executable, .nxApplication:
                     return product.targets
                 }
             })

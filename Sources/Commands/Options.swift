@@ -313,6 +313,27 @@ public struct SwiftToolOptions: ParsableArguments {
     ///  - important: Respects `--netrcOptional` option.
     @Option(name: .customLong("netrc-file"), completion: .file())
     var netrcFilePath: AbsolutePath?
-    
+
+    @Flag()
+    var klepto: Bool = false
+
+    @Option()
+    var kleptoToolchainPath: String?
+
+    @Option()
+    var devkitproPath: String?
+
+    @Option()
+    var kleptoSpecsPath: String?
+
+    @Option(name: .customLong("klepto-isystem"))
+    var kleptoIsystem: [String] = []
+
+    @Option(name: .customLong("klepto-icu-path"))
+    var kleptoIcuPaths: [String] = []
+
+    @Option()
+    var kleptoLlvmBinPath: String?
+
     public init() {}
 }

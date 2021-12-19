@@ -36,6 +36,26 @@ public final class UserToolchain: Toolchain {
 
     public var extraCPPFlags: [String]
 
+    public var isKlepto: Bool {
+        return self.destination.isKlepto
+    }
+
+    public var devkitproPath: String? {
+        return self.destination.devkitproPath
+    }
+
+    public var kleptoSpecsPath: String? {
+        return self.destination.kleptoSpecsPath
+    }
+
+    public var kleptoIcuPaths: [String] {
+        return self.destination.kleptoIcuPaths
+    }
+
+    public var kleptoLlvmBinPath: String? {
+        return self.destination.kleptoLlvmBinPath
+    }
+
     /// Path of the `swift` interpreter.
     public var swiftInterpreter: AbsolutePath {
         return swiftCompiler.parentDirectory.appending(component: "swift" + hostExecutableSuffix)

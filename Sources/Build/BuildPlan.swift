@@ -17,6 +17,8 @@ import PackageLoading
 import Foundation
 import SPMBuildCore
 
+import Klepto
+
 extension AbsolutePath {
   fileprivate var asSwiftStringLiteralConstant: String {
     return self.pathString.unicodeScalars
@@ -319,7 +321,10 @@ public final class ClangTargetBuildDescription {
         }
         args += optimizationArguments
         args += activeCompilationConditions
-        args += ["-fblocks"]
+
+        if !buildParameters.toolchain.isKlepto {
+            args += ["-fblocks"]
+        }
 
         // Enable index store, if appropriate.
         //
@@ -1109,7 +1114,7 @@ public final class ProductBuildDescription {
                 let relativePath = "@rpath/\(buildParameters.binaryRelativePath(for: product).pathString)"
                 args += ["-Xlinker", "-install_name", "-Xlinker", relativePath]
             }
-        case .executable:
+        case .executable, .nxApplication:
             // Link the Swift stdlib statically, if requested.
             if buildParameters.shouldLinkStaticSwiftStdlib {
                 if buildParameters.triple.isDarwin() {
@@ -1134,7 +1139,7 @@ public final class ProductBuildDescription {
         // Embed the swift stdlib library path inside tests and executables on Darwin.
         if containsSwiftTargets {
           switch product.type {
-          case .library: break
+          case .library, .nxApplication: break
           case .test, .executable:
               if buildParameters.triple.isDarwin() {
                   let stdlib = buildParameters.toolchain.macosSwiftStdlib
@@ -1482,12 +1487,15 @@ public class BuildPlan {
 
         // Link C++ if needed.
         // Note: This will come from build settings in future.
-        for target in dependencies.staticTargets {
-            if case let target as ClangTarget = target.underlyingTarget, target.isCXX {
-                buildProduct.additionalFlags += self.buildParameters.toolchain.extraCPPFlags
-                break
+        if !buildParameters.toolchain.isKlepto {
+            for target in dependencies.staticTargets {
+                if case let target as ClangTarget = target.underlyingTarget, target.isCXX {
+                    buildProduct.additionalFlags += self.buildParameters.toolchain.extraCPPFlags
+                    break
+                }
             }
         }
+
 
         for target in dependencies.staticTargets {
             switch target.underlyingTarget {
@@ -1559,7 +1567,7 @@ public class BuildPlan {
                 switch product.type {
                 case .library(.automatic), .library(.static):
                     return product.targets.map { .target($0, conditions: []) }
-                case .library(.dynamic), .test, .executable:
+                case .library(.dynamic), .test, .executable, .nxApplication:
                     return []
                 }
             }
@@ -1935,7 +1943,7 @@ fileprivate extension Triple.OS {
     /// Returns a representation of the receiver that can be compared with platform strings declared in an XCFramework.
     var asXCFrameworkPlatformString: String? {
         switch self {
-        case .darwin, .linux, .wasi, .windows:
+        case .darwin, .linux, .wasi, .windows, .unknown:
             return nil // XCFrameworks do not support any of these platforms today.
         case .macOS:
             return "macos"
@@ -1945,6 +1953,27 @@ fileprivate extension Triple.OS {
 
 fileprivate extension Triple {
     var isSupportingStaticStdlib: Bool {
-        isLinux() || arch == .wasm32
+        isUnknown() || isLinux() || arch == .wasm32
+    }
+}
+
+public extension ProductBuildDescription {
+    func kleptoLinkArguments() throws -> [String] {
+        return try buildKleptoLinkArguments(
+            productType: self.product.type,
+            devkitproPath: self.buildParameters.toolchain.devkitproPath!,
+            binaryPath: self.binary.pathString,
+            kleptoSpecsPath: self.buildParameters.toolchain.kleptoSpecsPath!,
+            kleptoIcuPaths: self.buildParameters.toolchain.kleptoIcuPaths,
+            kleptoLlvmBinPath: self.buildParameters.toolchain.kleptoLlvmBinPath!
+        )
+    }
+
+    func kleptoElf2NroArguments(input: AbsolutePath, output: AbsolutePath) -> [String] {
+        return buildKleptoElf2NroArguments(
+            devkitproPath: self.buildParameters.toolchain.devkitproPath!,
+            input: input,
+            output: output
+        )
     }
 }

@@ -34,7 +34,7 @@ extension Diagnostic.Message {
         switch product.type {
         case .library(.automatic):
             typeString = ""
-        case .executable, .test,
+        case .executable, .test, .nxApplication,
              .library(.dynamic), .library(.static):
             typeString = " (\(product.type))"
         }

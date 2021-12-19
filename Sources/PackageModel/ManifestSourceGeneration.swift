@@ -155,6 +155,8 @@ fileprivate extension SourceCodeFragment {
             self.init(enum: "executable", subnodes: params, multiline: true)
         case .test:
             self.init(enum: "test", subnodes: params, multiline: true)
+        case .nxApplication:
+            self.init(enum: "nxApplication", subnodes: params, multiline: true)
         }
     }
     

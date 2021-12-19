@@ -194,7 +194,7 @@ extension SwiftPackageTool {
         var swiftOptions: SwiftToolOptions
         
         @Option(name: .customLong("type"))
-        var initMode: InitPackage.PackageType = .library
+        var initMode: InitPackage.PackageType = .nxApplication
         
         @Option(name: .customLong("name"), help: "Provide custom package name")
         var packageName: String?

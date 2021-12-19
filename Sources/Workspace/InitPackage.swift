@@ -43,6 +43,8 @@ public final class InitPackage {
         case executable = "executable"
         case systemModule = "system-module"
         case manifest = "manifest"
+        case nxApplication = "nx-application"
+        case nxHybridApplication = "nx-hybrid-application"
 
         public var description: String {
             return rawValue
@@ -132,6 +134,28 @@ public final class InitPackage {
                 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
                 import PackageDescription
+                """
+
+            if packageType == .nxHybridApplication {
+                stream <<< """
+                    // Products define the executables and libraries a package produces, and make them visible to other packages.
+                    #if __SWITCH__
+                    let products = [
+                        Product.nxApplication(
+                            name: "\(pkgname)",
+                            targets: ["\(pkgname)"]),
+                    ]
+                    #else
+                    let products = [
+                        Product.executable(
+                            name: "\(pkgname)",
+                            targets: ["\(pkgname)"]),
+                    ]
+                    #endif
+                    """
+            }
+
+            stream <<< """
 
                 let package = Package(
 
@@ -178,6 +202,23 @@ public final class InitPackage {
                 """)
             }
 
+            if packageType == .nxApplication {
+                pkgParams.append("""
+                    products: [
+                        // Products define the executables and libraries a package produces, and make them visible to other packages.
+                        .nxApplication(
+                            name: "\(pkgname)",
+                            targets: ["\(pkgname)"]),
+                    ]
+                """)
+            }
+
+            if packageType == .nxHybridApplication {
+                pkgParams.append("""
+                    products: products
+                """)
+            }
+
             pkgParams.append("""
                     dependencies: [
                         // Dependencies declare other packages that this package depends on.
@@ -185,7 +226,19 @@ public final class InitPackage {
                     ]
                 """)
 
-            if packageType == .library || packageType == .executable || packageType == .manifest {
+            if packageType == .nxApplication {
+                pkgParams.append("""
+                    targets: [
+                        // Targets are the basic building blocks of a package. A target can define a module or a test suite.
+                        // Targets can depend on other targets in this package, and on products in packages this package depends on.
+                        .target(
+                            name: "\(pkgname)",
+                            dependencies: []),
+                    ]
+                """)
+            }
+
+            if packageType == .library || packageType == .executable || packageType == .manifest || packageType == .nxHybridApplication {
                 pkgParams.append("""
                     targets: [
                         // Targets are the basic building blocks of a package. A target can define a module or a test suite.
@@ -239,11 +292,14 @@ public final class InitPackage {
             stream <<< """
                 .DS_Store
                 /.build
+                /.build_nx
                 /Packages
                 /*.xcodeproj
                 xcuserdata/
                 DerivedData/
                 .swiftpm/xcode/package.xcworkspace/contents.xcworkspacedata
+                *.nro
+                *.elf
 
                 """
         }
@@ -267,7 +323,7 @@ public final class InitPackage {
         let moduleDir = sources.appending(component: "\(pkgname)")
         try makeDirectories(moduleDir)
         
-        let sourceFileName = (packageType == .executable) ? "main.swift" : "\(typeName).swift"
+        let sourceFileName = (packageType == .executable || packageType == .nxApplication || packageType == .nxHybridApplication) ? "main.swift" : "\(typeName).swift"
         let sourceFile = moduleDir.appending(RelativePath(sourceFileName))
 
         let content: String
@@ -283,6 +339,77 @@ public final class InitPackage {
             content = """
                 print("Hello, world!")
 
+                """
+        case .nxApplication:
+            content = """
+                import Switch
+
+                // Initialize console. Using nil as the second argument tells the console library to use the internal console structure as current one.
+                consoleInit(nil)
+
+                // Configure our supported input layout: a single player with standard controller styles
+                padConfigureInput(1, HidNpadStyleSet_NpadStandard)
+
+                // Initialize the default gamepad (which reads handheld mode inputs as well as the first connected controller)
+                var pad = PadState()
+                padInitializeDefault(&pad)
+
+                // Prints "Hello, World!"
+                print("Hello, World!")
+
+                while appletMainLoop() {
+                    // Scan the gamepad. This should be done once for each frame
+                    padUpdate(&pad)
+
+                    // padGetButtonsDown returns the set of buttons that have been newly pressed in this frame compared to the previous one
+                    let kDown = padGetButtonsDown(&pad)
+
+                    if kDown & HidNpadButton_Plus {
+                        break // break in order to return to hbmenu
+                    }
+
+                    consoleUpdate(nil)
+                }
+
+                consoleExit(nil)
+                """
+        case .nxHybridApplication:
+            content = """
+                #if __SWITCH__
+                import Switch
+
+                // Initialize console. Using nil as the second argument tells the console library to use the internal console structure as current one.
+                consoleInit(nil)
+
+                // Configure our supported input layout: a single player with standard controller styles
+                padConfigureInput(1, HidNpadStyleSet_NpadStandard)
+
+                // Initialize the default gamepad (which reads handheld mode inputs as well as the first connected controller)
+                var pad = PadState()
+                padInitializeDefault(&pad)
+
+                #endif
+
+                // Prints "Hello, World!"
+                print("Hello, World!")
+
+                #if __SWITCH__
+                while appletMainLoop() {
+                    // Scan the gamepad. This should be done once for each frame
+                    padUpdate(&pad)
+
+                    // padGetButtonsDown returns the set of buttons that have been newly pressed in this frame compared to the previous one
+                    let kDown = padGetButtonsDown(&pad)
+
+                    if kDown & HidNpadButton_Plus {
+                        break // break in order to return to hbmenu
+                    }
+
+                    consoleUpdate(nil)
+                }
+
+                consoleExit(nil)
+                #endif
                 """
         case .systemModule, .empty, .manifest:
             throw InternalError("invalid packageType \(packageType)")
@@ -315,7 +442,7 @@ public final class InitPackage {
     }
 
     private func writeTests() throws {
-        if packageType == .systemModule {
+        if packageType == .systemModule || packageType == .nxApplication {
             return
         }
         let tests = destinationPath.appending(component: "Tests")
@@ -326,8 +453,8 @@ public final class InitPackage {
         try makeDirectories(tests)
 
         switch packageType {
-        case .systemModule, .empty, .manifest: break
-        case .library, .executable:
+        case .systemModule, .empty, .manifest, .nxApplication: break
+        case .library, .executable, .nxHybridApplication:
             try writeTestFileStubs(testsPath: tests)
         }
     }
@@ -421,10 +548,10 @@ public final class InitPackage {
 
         let testClassFile = testModule.appending(RelativePath("\(moduleName)Tests.swift"))
         switch packageType {
-        case .systemModule, .empty, .manifest: break
+        case .systemModule, .empty, .manifest, .nxApplication: break
         case .library:
             try writeLibraryTestsFile(testClassFile)
-        case .executable:
+        case .executable, .nxHybridApplication:
             try writeExecutableTestsFile(testClassFile)
         }
     }

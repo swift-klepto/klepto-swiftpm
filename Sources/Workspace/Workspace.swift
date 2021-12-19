@@ -510,6 +510,19 @@ extension Workspace {
         for name in contentsToRemove {
             try? fileSystem.removeFileTree(dataPath.appending(RelativePath(name)))
         }
+
+        // Remove every .nro and .elf file in current working directory
+        guard let workingDirectory = localFileSystem.currentWorkingDirectory else {
+            return
+        }
+        guard let workingDirectoryContents = diagnostics.wrap({ try fileSystem.getDirectoryContents(workingDirectory) }) else {
+            return
+        }
+        for name in workingDirectoryContents {
+            if name.hasSuffix(".nro") || name.hasSuffix(".elf") {
+                try? fileSystem.removeFileTree(workingDirectory.appending(RelativePath(name)))
+            }
+        }
     }
 
     /// Cleans the build artefacts from workspace data.

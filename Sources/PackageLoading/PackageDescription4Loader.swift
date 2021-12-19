@@ -246,6 +246,9 @@ extension PackageModel.ProductType {
 
             self = .library(libraryType)
 
+        case "nxApplication":
+            self = .nxApplication
+
         default:
             throw InternalError("unexpected product type: \(json)")
         }

@@ -54,6 +54,21 @@ public struct Destination: Encodable, Equatable {
     /// Additional flags to be passed when compiling with C++.
     public let extraCPPFlags: [String]
 
+    /// Is the destination a klepto toolchain?
+    public var isKlepto: Bool = false
+
+    /// Path to devkitpro.
+    public var devkitproPath: String?
+
+    /// Path to the klepto.specs file.
+    public var kleptoSpecsPath: String?
+
+    /// Paths to icu builds.
+    public var kleptoIcuPaths: [String] = []
+
+    /// Path to llvm bin directory.
+    public var kleptoLlvmBinPath: String?
+
     /// Creates a compilation destination with the specified properties.
     public init(
       target: Triple? = nil,

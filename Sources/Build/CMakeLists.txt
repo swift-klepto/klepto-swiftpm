@@ -20,7 +20,8 @@ target_link_libraries(Build PUBLIC
   PackageGraph
   LLBuildManifest
   SPMBuildCore
-  SPMLLBuild)
+  SPMLLBuild
+  Klepto)
 target_link_libraries(Build PRIVATE
   SwiftDriver)
 

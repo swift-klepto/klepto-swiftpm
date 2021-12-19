@@ -169,12 +169,19 @@ let package = Package(
             name: "Workspace",
             dependencies: ["SwiftToolsSupport-auto", "Basics", "SPMBuildCore", "PackageGraph", "PackageModel", "SourceControl", "Xcodeproj"]),
 
+        // MARK: Klepto
+        .target(
+            /** Klepto additions */
+            name: "Klepto",
+            dependencies: ["PackageModel", "Workspace"]
+        ),
+
         // MARK: Commands
 
         .target(
             /** High-level commands */
             name: "Commands",
-            dependencies: ["SwiftToolsSupport-auto", "Basics", "Build", "PackageGraph", "SourceControl", "Xcodeproj", "Workspace", "XCBuildSupport", "ArgumentParser", "PackageCollections"]),
+            dependencies: ["SwiftToolsSupport-auto", "Basics", "Build", "PackageGraph", "SourceControl", "Xcodeproj", "Workspace", "XCBuildSupport", "ArgumentParser", "PackageCollections", "Klepto"]),
         .target(
             /** The main executable provided by SwiftPM */
             name: "swift-package",

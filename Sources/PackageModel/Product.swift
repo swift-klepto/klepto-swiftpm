@@ -72,6 +72,9 @@ public enum ProductType: Equatable {
 
     /// A test product.
     case test
+
+    /// A klepto libnx application (nro)
+    case nxApplication
 }
 
 /// The products requested of a package.
@@ -156,6 +159,8 @@ extension ProductType: CustomStringConvertible {
             case .static:
                 return "static"
             }
+        case .nxApplication:
+            return "nxApplication"
         }
     }
 }
@@ -175,7 +180,7 @@ extension ProductFilter: CustomStringConvertible {
 
 extension ProductType: Codable {
     private enum CodingKeys: String, CodingKey {
-        case library, executable, test
+        case library, executable, test, nxApplication
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -188,6 +193,8 @@ extension ProductType: Codable {
             try container.encodeNil(forKey: .executable)
         case .test:
             try container.encodeNil(forKey: .test)
+        case .nxApplication:
+            try container.encodeNil(forKey: .nxApplication)
         }
     }
 
@@ -205,6 +212,8 @@ extension ProductType: Codable {
             self = .test
         case .executable:
             self = .executable
+        case .nxApplication:
+            self = .nxApplication
         }
     }
 }

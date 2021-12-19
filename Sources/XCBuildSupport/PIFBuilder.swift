@@ -332,7 +332,7 @@ final class PackagePIFProjectBuilder: PIFProjectBuilder {
 
     private func addTarget(for product: ResolvedProduct) {
         switch product.type {
-        case .executable, .test:
+        case .executable, .test, .nxApplication:
             addMainModuleTarget(for: product)
         case .library:
             addLibraryTarget(for: product)
@@ -1351,6 +1351,8 @@ extension ProductType {
             return .test
         case .library:
             return .library
+        case .nxApplication:
+            return .executable // TODO: do we care?
         }
     }
 }

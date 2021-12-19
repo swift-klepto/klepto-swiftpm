@@ -557,7 +557,7 @@ extension LLBuildManifestBuilder {
 
             case .product(let product, _):
                 switch product.type {
-                case .executable, .library(.dynamic):
+                case .executable, .library(.dynamic), .nxApplication:
                     guard let planProduct = plan.productMap[product] else {
                         throw InternalError("unknown product \(product)")
                     }
@@ -661,7 +661,7 @@ extension LLBuildManifestBuilder {
 
             case .product(let product, _):
                 switch product.type {
-                case .executable, .library(.dynamic):
+                case .executable, .library(.dynamic), .nxApplication:
                     guard let planProduct = plan.productMap[product] else {
                         throw InternalError("unknown product \(product)")
                     }
@@ -775,6 +775,7 @@ extension LLBuildManifestBuilder {
 extension LLBuildManifestBuilder {
     private func createProductCommand(_ buildProduct: ProductBuildDescription) throws {
         let cmdName = try buildProduct.product.getCommandName(config: buildConfig)
+        var phonyNodeInput = buildProduct.binary
 
         // Create archive tool for static library and shell tool for rest of the products.
         if buildProduct.product.type == .library(.static) {
@@ -783,7 +784,44 @@ extension LLBuildManifestBuilder {
                 inputs: buildProduct.objects.map(Node.file),
                 outputs: [.file(buildProduct.binary)]
             )
-        } else {
+        } else if buildProduct.product.type == .nxApplication {
+            // Linking
+            let inputs = buildProduct.objects + buildProduct.dylibs.map({ $0.binary })
+
+            var args = try buildProduct.linkArguments()
+            args += try buildProduct.kleptoLinkArguments()
+
+            manifest.addShellCmd(
+                name: cmdName,
+                description: "Linking \(buildProduct.binary.prettyPath())",
+                inputs: inputs.map(Node.file),
+                outputs: [.file(buildProduct.binary)],
+                args: args
+            )
+
+            // Copy elf next to NRO to ease debugging
+            let elfPath = localFileSystem.currentWorkingDirectory!.appending(component: buildProduct.binary.basename + ".elf")
+            manifest.addCopyCmd(
+                name: elfPath.pathString,
+                inputs: [.file(buildProduct.binary)],
+                outputs: [.file(elfPath)]
+            )
+
+            // elf2nro
+            let nroCmdName = try buildProduct.product.getElf2NroCommandName(config: buildConfig)
+            let nroPath = localFileSystem.currentWorkingDirectory!.appending(component: buildProduct.binary.basename + ".nro")
+
+            manifest.addShellCmd(
+                name: nroCmdName,
+                description: "Building \(nroPath)",
+                inputs: [.file(elfPath)],
+                outputs: [.file(nroPath)],
+                args: buildProduct.kleptoElf2NroArguments(input: buildProduct.binary, output: nroPath)
+            )
+
+            phonyNodeInput = nroPath
+        }
+        else {
             let inputs = buildProduct.objects + buildProduct.dylibs.map({ $0.binary })
 
             manifest.addShellCmd(
@@ -802,7 +840,7 @@ extension LLBuildManifestBuilder {
         manifest.addNode(output, toTarget: targetName)
         manifest.addPhonyCmd(
             name: output.name,
-            inputs: [.file(buildProduct.binary)],
+            inputs: [.file(phonyNodeInput)],
             outputs: [output]
         )
 
@@ -840,13 +878,17 @@ extension ResolvedProduct {
             return "\(name)-\(config).a"
         case .library(.automatic):
             throw InternalError("automatic library not supported")
-        case .executable:
+        case .executable, .nxApplication:
             return "\(name)-\(config).exe"
         }
     }
 
     public func getCommandName(config: String) throws -> String {
         return try "C." + self.getLLBuildTargetName(config: config)
+    }
+
+    public func getElf2NroCommandName(config: String) throws -> String {
+        return "C." + "\(name)-\(config).nro"
     }
 }
 

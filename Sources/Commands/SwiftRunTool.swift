@@ -187,7 +187,7 @@ public struct SwiftRunTool: SwiftCommand {
         // If the executable is implicit, search through root products.
         let rootExecutables = graph.rootPackages
             .flatMap { $0.products }
-            .filter { $0.type == .executable }
+            .filter { $0.type == .executable || $0.type == .nxApplication }
             .map { $0.name }
 
         // Error out if the package contains no executables.

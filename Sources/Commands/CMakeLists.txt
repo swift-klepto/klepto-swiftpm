@@ -31,7 +31,8 @@ target_link_libraries(Commands PUBLIC
   TSCUtility
   Workspace
   XCBuildSupport
-  Xcodeproj)
+  Xcodeproj
+  Klepto)
 if(NOT CMAKE_SYSTEM_NAME STREQUAL Darwin)
   if(Foundation_FOUND)
     target_link_libraries(Commands PUBLIC

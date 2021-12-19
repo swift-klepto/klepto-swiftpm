@@ -34,6 +34,21 @@ public protocol Toolchain {
 
     /// Additional flags to be passed when compiling with C++.
     var extraCPPFlags: [String] { get }
+
+    /// Is it a klepto toolchain?
+    var isKlepto: Bool { get }
+
+    /// Path to devkitpro.
+    var devkitproPath: String? { get }
+
+    /// Path to the klepto.specs file.
+    var kleptoSpecsPath: String? { get }
+
+    /// Paths to icu builds.
+    var kleptoIcuPaths: [String] { get }
+
+    /// Path to llvm bin directory.
+    var kleptoLlvmBinPath: String? { get }
 }
 
 extension Toolchain {

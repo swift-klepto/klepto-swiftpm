@@ -88,6 +88,29 @@ public class Product: Encodable {
         }
     }
 
+    /// The nxApplication product of a Swift package.
+    public final class NxApplication: Product {
+        private enum NxApplicationCodingKeys: CodingKey {
+            case targets
+        }
+
+        /// The names of the targets in this product.
+        public let targets: [String]
+
+        init(name: String, targets: [String]) {
+            self.targets = targets
+            super.init(name: name)
+        }
+
+        public override func encode(to encoder: Encoder) throws {
+            try super.encode(to: encoder)
+            var productContainer = encoder.container(keyedBy: ProductCodingKeys.self)
+            try productContainer.encode("nxApplication", forKey: .type)
+            var executableContainer = encoder.container(keyedBy: NxApplicationCodingKeys.self)
+            try executableContainer.encode(targets, forKey: .targets)
+        }
+    }
+
     /// The library product of a Swift package.
     public final class Library: Product {
         private enum LibraryCodingKeys: CodingKey {
@@ -160,6 +183,13 @@ public class Product: Encodable {
         targets: [String]
     ) -> Product {
         return Executable(name: name, targets: targets)
+    }
+
+    public static func nxApplication(
+        name: String,
+        targets: [String]
+    ) -> Product {
+        return NxApplication(name: name, targets: targets)
     }
 
     public func encode(to encoder: Encoder) throws {
